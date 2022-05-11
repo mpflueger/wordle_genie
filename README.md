@@ -8,6 +8,10 @@ A tool for evaluating Wordle openings and finding the best openings.
 
 `answer` can be the actual answer, or any string compatible with the hints seen for the guess list.
 
+First, wordle_genie will find all the valid answers compatible with the hints that would have been given so for for the supplied answer on the supplied guesses.
+
+Second, wordle_genie will evaluate the quality of the guesses as an opening by evaluating them against all possible answers, and providing the distribution of the number of valid answers that would have been left given the hints from all possible answers.
+
 Example:
 ```
 > ./wordle_genie trace lions abbey
