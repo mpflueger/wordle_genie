@@ -140,18 +140,13 @@ void safeEvaluateOpen(
     const vector<string>& guesses,
     const vector<string>& word_list,
     std::mutex& result_mutex,
-    EvalResult& eval_result
-    //vector<int>& distribution,
-    ) {
-  // cout << "Entering safeEvaluateOpen for guesses: " << guesses[0] << endl;
+    EvalResult& eval_result) {
   EvalResult local_result;
   std::vector<int> local_dist;
   local_dist = evaluateOpen(guesses, word_list, local_result);
 
   const std::lock_guard<std::mutex> lock(result_mutex);
   eval_result = local_result;
-  //distribution = local_dist;
-  // cout << "Leaving safeEvaluateOpen for guesses: " << guesses[0] << endl;
 }
 
 class ThreadPool {
@@ -350,7 +345,7 @@ int main(int argc, char** argv) {
   int best_index = 0;
   EvalResult best_result;
   if (results.size() > 0) {
-    EvalResult best_result = results[0];
+    best_result = results[0];
   } else {
     cerr << "ERROR: no best open results." << endl;
   }
@@ -358,10 +353,12 @@ int main(int argc, char** argv) {
     if (results[i].mean < best_result.mean) {
       best_index = i;
       best_result = results[i];
+      cout << "Good Opening: " << answer_list[best_index] << endl;
+      cout << "  with mean: " << best_result.mean << " and median: " << best_result.median << endl;
     }
   }
 
-  cout << "Best Opening: " << answer_list[best_index] << endl;
+  cout << "Best Opening: " << answer_list[best_index] << " at index " << best_index << endl;
   cout << "  with mean: " << best_result.mean << " and median: " << best_result.median << endl;
 
   return 0;
