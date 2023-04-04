@@ -1,3 +1,4 @@
+/// Wordle Genie
 /// Do fancy wordle things.
 /// Author: Max Pflueger
 
@@ -251,7 +252,6 @@ void runNumOptions(const std::vector<std::string>& guesses,
   // Find available next guess options.
   // Run the guesses against the answer.
   vector<string> options;
-  // cout << "Running numOptions for TRACE LOINS on ABBEY." << endl;
   cout << "Running numOptions for [";
   for (auto& w : guesses) {
     cout << w << ", ";
@@ -259,7 +259,6 @@ void runNumOptions(const std::vector<std::string>& guesses,
   cout << "] on " << answer << "." << endl;
 
   auto start = chrono::steady_clock::now();
-  // int result = numOptions({"trace", "loins"}, "abbey", answer_list, &options);
   int result = numOptions(guesses, answer, answer_list, &options);
   auto end = chrono::steady_clock::now();
   chrono::duration<double> diff = end - start;
@@ -341,7 +340,6 @@ void runFindOpening(const std::vector<std::string>& answer_list,
 
 
 int main(int argc, char** argv) {
-  // Example usage: ./wordle_genie options trace,lions abbey
   constexpr string_view usage = 
     "./wordle_genie <mode> [args]\n"
     "    Example usage: ./wordle_genie options trace,lions abbey\n"
@@ -391,7 +389,7 @@ int main(int argc, char** argv) {
     cout << "Calculating best single word opening." << endl;
     cout << "  Using " << thread_count << " threads." << endl;
   }
-  // TODO else if (mode == "next") {}
+  // TODO else if (mode == next) {}
   else if (mode == options) {
     istringstream ss;
     string w;
