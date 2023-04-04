@@ -19,14 +19,14 @@ A tool for evaluating Wordle moves and finding the best openings.
 In `opening` mode wordle_genie will search for the best single word opening based on the mean number of remaining options after the first guess.  Future work could include other metrics for 'best' opening.  It is recommended that you use a number of threads similar to the number of virtual cpus on your system (or maybe 1 less to keep the system responsive).
 
 ### `options` mode
-In `options` mode wordle_genie will find all the valid answers compatible with the hints that would have been given so for for the supplied answer on the supplied guesses.
+In `options` mode wordle_genie will find all the valid answers compatible with the hints that would have been given for the supplied answer on the supplied guesses.
 
 `fake answer` can be the actual answer, or any string compatible with the hints seen for the guess list.
 
 ### `evalopen` mode
 In `evalopen` mode wordle_genie will evaluate the quality of the guesses as an opening by evaluating them against all possible answers, and providing the distribution of the number of valid answers that would have been left given the hints from all possible answers.
 
-Example:
+### Examples:
 ```
 > ./wordle_genie options trace,lions abbey
 Finding possible answers for guesses [trace, lions] with fake answer "abbey"
