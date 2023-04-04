@@ -9,7 +9,9 @@
 #include <iostream>
 #include <mutex>
 #include <set>
+#include <sstream>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <vector>
 #include <queue>
@@ -242,41 +244,10 @@ class ThreadPool {
   std::queue<std::function<void()>> job_queue;
 };
 
-void worker(int& next_work, mutex& m, const vector<string>& word_list) {
-  while(true) {
-    
-  }
-}
 
-int main(int argc, char** argv) {
-
-  // Read the args as a list of word guesses
-  vector<string> guesses;
-  string answer;
-  for (int i = 1; i < argc - 1; i++) {
-    guesses.push_back(argv[i]);
-  }
-  answer = argv[argc - 1];
-
-
-  // Read the word list.
-  string answer_file = "wordle_answers.txt";
-  cout << "Reading answer_list from " << answer_file << endl;
-  ifstream f;
-  f.open(answer_file);
-  vector<string> answer_list;
-  string line;
-  while(getline(f, line)) {
-    if (line.size() == 5) {
-      answer_list.push_back(line);
-    } else {
-      cerr << "Invalid line: " << line << endl;
-    }
-  }
-  f.close();
-  cout << "  Read in " << answer_list.size() << " words." << endl;
-
-  // ==================================================================
+void runNumOptions(const std::vector<std::string>& guesses,
+                   const std::string& answer,
+                   const std::vector<std::string>& answer_list) {
   // Find available next guess options.
   // Run the guesses against the answer.
   vector<string> options;
@@ -286,33 +257,37 @@ int main(int argc, char** argv) {
     cout << w << ", ";
   }
   cout << "] on " << answer << "." << endl;
+
   auto start = chrono::steady_clock::now();
   // int result = numOptions({"trace", "loins"}, "abbey", answer_list, &options);
   int result = numOptions(guesses, answer, answer_list, &options);
   auto end = chrono::steady_clock::now();
   chrono::duration<double> diff = end - start;
+
   cout << "  numOptions=" << result << " computed in " << diff.count() << " s" << endl;
   cout << "Options are: " << endl;
   for (auto& word : options) {
     cout << word << endl;
   }
+}
 
-  // ===================================================================
+
+void runEvaluateOpen(const std::vector<std::string>& guesses,
+                     const std::vector<std::string>& answer_list) {
   // Evaluate the opening.
-  // cout << "Running evaluateOpen for TRACE LOINS." << endl;
   cout << "Running evaluateOpen for [";
   for (auto& w : guesses) {
     cout << w << ", ";
   }
   cout << "]." << endl;
+
   EvalResult eval_result;
-  start = chrono::steady_clock::now();
-  // auto distribution =
-  //     evaluateOpen({"trace", "loins"}, answer_list, eval_result);
+  auto start = chrono::steady_clock::now();
   auto distribution =
       evaluateOpen(guesses, answer_list, eval_result);
-  end = chrono::steady_clock::now();
-  diff = end - start;
+  auto end = chrono::steady_clock::now();
+  chrono::duration<double> diff = end - start;
+
   cout << "Found distribuiton in " << diff.count() << " s:" << endl;
   for (int i = 0; i < distribution.size(); i++) {
     cout << i << ":" << distribution[i] << ", ";
@@ -320,10 +295,12 @@ int main(int argc, char** argv) {
   cout << endl;
   cout << "  Mean: " << eval_result.mean
        << "  Median: " << eval_result.median << endl;
+}
 
-  // =================================================================
-  // Find the best single word open.
-  int thread_count = 7; // TODO: set by argument
+
+void runFindOpening(const std::vector<std::string>& answer_list,
+                    const int thread_count) {
+  // Find the best single word opening.
   ThreadPool thread_pool(thread_count);
   mutex result_mutex;
   unique_lock<mutex> result_lock(result_mutex);
@@ -360,6 +337,127 @@ int main(int argc, char** argv) {
 
   cout << "Best Opening: " << answer_list[best_index] << " at index " << best_index << endl;
   cout << "  with mean: " << best_result.mean << " and median: " << best_result.median << endl;
+}
+
+
+int main(int argc, char** argv) {
+  // Example usage: ./wordle_genie options trace,lions abbey
+  constexpr string_view usage = 
+    "./wordle_genie <mode> [args]\n"
+    "    Example usage: ./wordle_genie options trace,lions abbey\n"
+    "  opening\n"
+    "    Find the best opening move.\n"
+    "      -t N    Number of threads (default 7)\n"
+    // TODO "    -w N          Number of words to open with\n"
+    // TODO "    -p word,word  Find the best opening as a continuation of the word list.\n"
+    // TODO "  next <wordlist> <fake answer>\n"
+    // TODO "    Find the best next word after wordlist (comma separated), with clues\n"
+    // TODO "    based on the fake answer.\n"
+    // TODO "      -t N    Number of threads (default 7)\n"
+    "  options <wordlist> <fake answer>\n"
+    "    Find all possible answers given guesses in wordlist (comma separated),\n"
+    "    with clues based on the fake answer.\n"
+    "  evalopen <wordlist>\n"
+    "    Evaluate the quality of an opening list of (comma separated) guesses.\n";
+  constexpr string_view opening = "opening";
+  constexpr string_view next = "next";
+  constexpr string_view options = "options";
+  constexpr string_view evalopen = "evalopen";
+
+  // Read the mode.
+  string mode;
+  if (argc >= 1) {
+    mode = argv[1];
+  } else {
+    cerr << usage;
+    return 0;
+  }
+
+  // Parse args based on mode.
+  int thread_count = 7;
+  vector<string> guesses;
+  string answer;
+  if (mode == opening) {
+    for (int i = 2; i < argc; i++) {
+      if (string(argv[i]) == "-t" && i + 1 < argc) {
+        stringstream ss;
+        ss.str(argv[i + 1]);
+        ss >> thread_count;
+        i++;
+      } else {
+        cerr << "Ignoring arg: " << argv[i] << endl;
+      }
+    }
+    cout << "Calculating best single word opening." << endl;
+    cout << "  Using " << thread_count << " threads." << endl;
+  }
+  // TODO else if (mode == "next") {}
+  else if (mode == options) {
+    istringstream ss;
+    string w;
+    if (argc >= 3) {
+      ss.str(argv[2]);
+      while (getline(ss, w, ',')) {
+        guesses.push_back(w);
+      }
+      answer = argv[3];
+    }
+
+    cout << "Finding possible answers for guesses [";
+    for (int i = 0; i < guesses.size(); i++) {
+      if (i > 0) cerr << ", ";
+      cout << guesses[i];
+    }
+    cout << "] with fake answer \"" << answer << "\"" << endl;
+  }
+  else if (mode == evalopen) {
+    istringstream ss;
+    string w;
+    if (argc >= 2) {
+      ss.str(argv[2]);
+      while (getline(ss, w, ',')) {
+        guesses.push_back(w);
+      }
+    }
+
+    cout << "Evaluating the quality of the opening: [";
+    for (int i = 0; i < guesses.size(); i++) {
+      if (i > 0) cerr << ", ";
+      cout << guesses[i];
+    }
+    cout << "]" << endl;
+  }
+  else {
+    cerr << usage;
+    return 0;
+  }
+
+  // Read the word list.
+  vector<string> answer_list;
+  string answer_file = "wordle_answers.txt";
+  cout << "Reading answer_list from " << answer_file << endl;
+  ifstream f;
+  f.open(answer_file);
+  string line;
+  while(getline(f, line)) {
+    if (line.size() == 5) {
+      answer_list.push_back(line);
+    } else {
+      cerr << "Invalid line: " << line << endl;
+    }
+  }
+  f.close();
+  cout << "  Read in " << answer_list.size() << " words." << endl;
+
+  if (mode == options) {
+    runNumOptions(guesses, answer, answer_list);
+  }
+  if (mode == evalopen) {
+    runEvaluateOpen(guesses, answer_list);
+  }
+  if (mode == opening) {
+    runFindOpening(answer_list, thread_count);
+  }
 
   return 0;
 }
